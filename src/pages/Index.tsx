@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,11 +43,20 @@ const Index = () => {
 
     setIsLoading(true);
     try {
-      // TODO: integrate with Stripe checkout edge function
-      toast({
-        title: "Coming soon",
-        description: "Payment processing will be connected shortly.",
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          amount: Math.round(donationAmount * 100),
+          name: name || undefined,
+          message: message || undefined,
+        },
       });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
     } catch {
       toast({
         title: "Error",
