@@ -8,10 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 
-const PRESET_AMOUNTS = [5, 10, 25, 50];
+const PRESET_AMOUNTS = [100, 250, 500, 1000];
 
 const Index = () => {
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(25);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(250);
   const [customAmount, setCustomAmount] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [name, setName] = useState("");
@@ -35,7 +35,7 @@ const Index = () => {
     if (!donationAmount || donationAmount < 1) {
       toast({
         title: "Invalid amount",
-        description: "Please enter an amount of at least $1.",
+        description: "Please enter an amount of at least ₹1.",
         variant: "destructive",
       });
       return;
