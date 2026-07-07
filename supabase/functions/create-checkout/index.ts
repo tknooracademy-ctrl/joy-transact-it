@@ -22,7 +22,7 @@ serve(async (req) => {
 
     if (!amount || amount < 100) {
       return new Response(
-        JSON.stringify({ error: "Minimum donation is $1" }),
+        JSON.stringify({ error: "Minimum donation is ₹1" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -36,11 +36,11 @@ serve(async (req) => {
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
-      payment_method_types: ["card"],
+      payment_method_types: ["card", "upi"],
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "inr",
             product_data: {
               name: "Donation",
               description: message
