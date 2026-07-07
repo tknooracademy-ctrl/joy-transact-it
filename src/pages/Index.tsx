@@ -100,7 +100,7 @@ const Index = () => {
                   className="text-base font-semibold h-12"
                   onClick={() => handlePresetClick(amount)}
                 >
-                  ${amount}
+                  ₹{amount}
                 </Button>
               ))}
             </div>
@@ -112,7 +112,7 @@ const Index = () => {
               Or enter a custom amount
             </Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
               <Input
                 id="custom-amount"
                 type="number"
@@ -167,13 +167,13 @@ const Index = () => {
             ) : (
               <>
                 <Heart className="w-5 h-5 mr-2" />
-                Donate {donationAmount && donationAmount >= 1 ? `$${donationAmount}` : ""}
+                Donate {donationAmount && donationAmount >= 1 ? `₹${donationAmount}` : ""}
               </>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Payments are securely processed via Stripe. No account required.
+            Cards & UPI supported. Securely processed via Stripe. No account required.
           </p>
         </CardContent>
       </Card>
