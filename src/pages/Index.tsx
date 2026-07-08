@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,14 @@ import { toast } from "@/hooks/use-toast";
 
 const PRESET_AMOUNTS = [100, 250, 500, 1000];
 
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
 const Index = () => {
+  const navigate = useNavigate();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(250);
   const [customAmount, setCustomAmount] = useState("");
   const [isCustom, setIsCustom] = useState(false);
@@ -41,9 +49,18 @@ const Index = () => {
       return;
     }
 
+    if (!window.Razorpay) {
+      toast({
+        title: "Razorpay not loaded",
+        description: "Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      const { data, error } = await supabase.functions.invoke("create-razorpay-order", {
         body: {
           amount: Math.round(donationAmount * 100),
           name: name || undefined,
@@ -52,25 +69,62 @@ const Index = () => {
       });
 
       if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL returned");
-      }
-    } catch {
+      if (!data?.orderId) throw new Error("No order ID returned");
+
+      const rzp = new window.Razorpay({
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        name: "Support Our Cause",
+        description: "Donation",
+        order_id: data.orderId,
+        prefill: {
+          name: name || "",
+        },
+        notes: {
+          message: message || "",
+        },
+        theme: { color: "#ea580c" },
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          try {
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+              "verify-razorpay-payment",
+              { body: response }
+            );
+            if (verifyError || !verifyData?.verified) {
+              navigate("/donation-cancel");
+              return;
+            }
+            navigate("/donation-success");
+          } catch {
+            navigate("/donation-cancel");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsLoading(false);
+          },
+        },
+      });
+
+      rzp.open();
+    } catch (err) {
+      console.error(err);
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
-      {/* Hero */}
       <section className="text-center max-w-xl mb-10">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent mb-6">
           <Heart className="w-8 h-8 text-primary" />
@@ -83,10 +137,8 @@ const Index = () => {
         </p>
       </section>
 
-      {/* Donation Card */}
       <Card className="w-full max-w-md shadow-lg border-border/60">
         <CardContent className="p-8 space-y-6">
-          {/* Preset Amounts */}
           <div>
             <Label className="text-sm font-medium text-foreground mb-3 block">
               Choose an amount
@@ -106,7 +158,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Custom Amount */}
           <div>
             <Label htmlFor="custom-amount" className="text-sm font-medium text-foreground mb-2 block">
               Or enter a custom amount
@@ -127,7 +178,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Optional Fields */}
           <div className="space-y-4">
             <div>
               <Label htmlFor="donor-name" className="text-sm font-medium text-foreground mb-2 block">
@@ -155,7 +205,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Donate Button */}
           <Button
             onClick={handleDonate}
             disabled={isLoading || (!donationAmount || donationAmount < 1)}
@@ -173,7 +222,7 @@ const Index = () => {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Cards & UPI supported. Securely processed via Stripe. No account required.
+            UPI, Cards, Netbanking & Wallets supported. Securely processed via Razorpay.
           </p>
         </CardContent>
       </Card>
