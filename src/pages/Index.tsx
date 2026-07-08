@@ -69,15 +69,18 @@ const Index = () => {
       });
 
       if (error) throw error;
-      if (!data?.orderId) throw new Error("No order ID returned");
+      const orderId = data?.orderId ?? data?.order_id;
+      const keyId = data?.keyId ?? data?.key_id;
+      if (!orderId) throw new Error("No order ID returned");
 
       const rzp = new window.Razorpay({
-        key: data.keyId,
+        key: keyId,
         amount: data.amount,
         currency: data.currency,
         name: "Support Our Cause",
         description: "Donation",
-        order_id: data.orderId,
+        order_id: orderId,
+
         prefill: {
           name: name || "",
         },
